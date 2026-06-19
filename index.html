@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ONE-TRE">
+<meta name="theme-color" content="#5BB9CD">
+<title>ONE-TRE 営業先リスト</title>
+<style>
+  :root{
+    --primary:#5BB9CD; --on-primary:#ffffff; --accent:#2a8294; --tint:#EAF6F9;
+    --bg:#f3f5f7; --card:#ffffff; --text:#1f2933; --muted:#7b8794; --line:#e3e8ec;
+    --green:#3B6D11; --green-bg:#EAF3DE; --amber:#854F0B; --amber-bg:#FAEEDA;
+    --gold:#C9A24B; --gold-bg:#FBF4E2; --danger:#A32D2D;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:600px; margin:0 auto; min-height:100vh; background:var(--bg);}
+  /* ヘッダー */
+  .hd{background:var(--primary); color:var(--on-primary); padding:14px 16px 16px;}
+  .hd-top{display:flex; align-items:center; gap:10px;}
+  .logo{width:30px; height:30px; flex:0 0 auto;}
+  .hd-title{font-size:16px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gear{background:rgba(255,255,255,.22); border:none; color:var(--on-primary); width:32px; height:32px; border-radius:9px; font-size:16px; cursor:pointer; flex:0 0 auto;}
+  /* プロジェクトチップ */
+  .projbar{display:flex; gap:8px; overflow-x:auto; padding:12px 16px 4px; -webkit-overflow-scrolling:touch;}
+  .projbar::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto; padding:7px 14px; border-radius:18px; font-size:13px; font-weight:500; border:1.5px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; white-space:nowrap;}
+  .chip.on{background:var(--primary); color:var(--on-primary); border-color:var(--primary);}
+  .chip.add{border-style:dashed; color:var(--muted);}
+  /* 統計 */
+  .stats{display:flex; gap:8px; padding:12px 16px 0;}
+  .stat{flex:1; background:var(--card); border-radius:12px; padding:10px 6px; text-align:center; border:1px solid var(--line);}
+  .stat .lbl{font-size:11px; color:var(--muted);}
+  .stat .num{font-size:22px; font-weight:700; color:var(--text); line-height:1.2;}
+  .stat .sub{font-size:11px; color:var(--muted);}
+  .countline{text-align:center; font-size:12px; color:var(--muted); padding:8px 16px 2px;}
+  .countline b{color:var(--accent); font-weight:700;}
+  /* タブ */
+  .tabs{display:flex; gap:8px; padding:10px 16px 0;}
+  .tab{flex:1; text-align:center; padding:9px; border-radius:10px 10px 0 0; font-size:13px; font-weight:500; background:var(--tint); color:var(--muted); cursor:pointer;}
+  .tab.on{background:var(--primary); color:var(--on-primary);}
+  /* フィルタ */
+  .filters{display:flex; gap:6px; overflow-x:auto; padding:10px 16px 4px;}
+  .filters::-webkit-scrollbar{display:none;}
+  .fchip{flex:0 0 auto; padding:6px 12px; border-radius:16px; font-size:12px; border:1px solid var(--line); background:var(--card); color:var(--muted); cursor:pointer; white-space:nowrap;}
+  .fchip.on{background:var(--accent); color:#fff; border-color:var(--accent);}
+  /* リスト */
+  .list{padding:6px 16px 90px;}
+  .item{background:var(--card); border:1px solid var(--line); border-radius:12px; margin-top:8px; overflow:hidden;}
+  .item.done{opacity:.55;}
+  .row{display:flex; align-items:center; gap:10px; padding:12px;}
+  .check{width:26px; height:26px; flex:0 0 auto; border:2px solid var(--primary); border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff;}
+  .check.on{background:var(--primary);}
+  .name{flex:1; font-size:15px; font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .item.done .name{text-decoration:line-through;}
+  .closed-badge{display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:600; color:var(--gold); background:var(--gold-bg); padding:3px 8px; border-radius:12px; flex:0 0 auto;}
+  .mini-stars{font-size:13px; color:var(--gold); flex:0 0 auto; letter-spacing:1px;}
+  .exp{font-size:18px; color:var(--muted); flex:0 0 auto; cursor:pointer; transition:transform .15s;}
+  .exp.open{transform:rotate(180deg);}
+  .detail{display:none; padding:0 12px 12px; border-top:1px solid var(--line);}
+  .detail.open{display:block;}
+  .dlabel{font-size:12px; color:var(--muted); margin:12px 0 5px;}
+  .stars{display:flex; gap:6px;}
+  .star{font-size:28px; cursor:pointer; color:#d6dbe0; line-height:1;}
+  .star.on{color:var(--gold);}
+  .star-hint{font-size:11px; color:var(--muted); margin-top:3px;}
+  .toggle-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+  .tbtn{padding:8px 12px; border-radius:9px; font-size:13px; border:1.5px solid var(--line); background:var(--card); color:var(--text); cursor:pointer;}
+  .tbtn.on-ref{background:var(--green-bg); border-color:var(--green); color:var(--green);}
+  .tbtn.on-closed{background:var(--gold-bg); border-color:var(--gold); color:#7a5e16;}
+  input.txt,textarea.txt{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:14px; font-family:inherit; background:#fafbfc; color:var(--text);}
+  textarea.txt{resize:vertical; min-height:54px;}
+  .editbtns{display:flex; gap:8px; margin-top:12px;}
+  .editbtns button{flex:1; padding:9px; border-radius:9px; font-size:13px; border:1px solid var(--line); background:var(--card); cursor:pointer;}
+  .editbtns .del{color:var(--danger); border-color:#e9c4c4;}
+  /* 集計 */
+  .agg{padding:10px 16px 90px;}
+  .agg-cards{display:flex; gap:8px;}
+  .chart{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 14px; margin-top:12px;}
+  .chart h3{margin:0 0 14px; font-size:14px; font-weight:600;}
+  .bars{display:flex; align-items:flex-end; gap:10px; height:160px;}
+  .barcol{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .barval{font-size:12px; font-weight:600; color:var(--accent); margin-bottom:4px;}
+  .bar{width:100%; max-width:38px; background:var(--primary); border-radius:6px 6px 0 0; min-height:3px; transition:height .3s;}
+  .barlbl{font-size:11px; color:var(--muted); margin-top:6px;}
+  .empty{text-align:center; color:var(--muted); font-size:13px; padding:40px 0;}
+  /* FAB */
+  .fab{position:fixed; left:50%; transform:translateX(-50%); bottom:24px; max-width:600px; width:calc(100% - 32px); display:flex; justify-content:center; pointer-events:none;}
+  .fab button{pointer-events:auto; background:var(--primary); color:var(--on-primary); border:none; border-radius:28px; padding:14px 26px; font-size:15px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,.18); cursor:pointer;}
+  /* モーダル */
+  .ov{position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .ov.open{display:flex;}
+  .modal{background:var(--card); border-radius:16px; width:100%; max-width:380px; padding:20px; max-height:88vh; overflow-y:auto;}
+  .modal h2{margin:0 0 14px; font-size:17px; font-weight:600;}
+  .mlabel{font-size:12px; color:var(--muted); margin:12px 0 5px;}
+  .colors{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:4px;}
+  .cdot{width:38px; height:38px; border-radius:50%; cursor:pointer; border:3px solid transparent;}
+  .cdot.on{border-color:var(--text);}
+  .mbtns{display:flex; gap:8px; margin-top:18px;}
+  .mbtns button{flex:1; padding:12px; border-radius:10px; font-size:14px; font-weight:500; border:none; cursor:pointer;}
+  .mbtns .cancel{background:var(--line); color:var(--text);}
+  .mbtns .ok{background:var(--primary); color:var(--on-primary);}
+  .mbtns .del{background:#fff; color:var(--danger); border:1px solid #e9c4c4;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">
+    <div class="hd-top">
+      <svg class="logo" viewBox="0 0 132 132" xmlns="http://www.w3.org/2000/svg">
+        <rect width="132" height="132" rx="30" fill="#fff" opacity="0.18"/>
+        <circle cx="66" cy="66" r="46" fill="none" stroke="#fff" stroke-width="7" opacity="0.5"/>
+        <circle cx="66" cy="66" r="31" fill="none" stroke="#fff" stroke-width="7" opacity="0.8"/>
+        <circle cx="66" cy="66" r="16" fill="#fff"/>
+      </svg>
+      <div class="hd-title" id="hdTitle">ONE-TRE 営業先</div>
+      <button class="gear" id="gearBtn" aria-label="プロジェクト設定">⚙</button>
+    </div>
+  </div>
+
+  <div class="projbar" id="projbar"></div>
+
+  <div class="stats" id="stats"></div>
+  <div class="countline" id="countline"></div>
+
+  <div class="tabs">
+    <div class="tab on" id="tabList">リスト</div>
+    <div class="tab" id="tabAgg">集計</div>
+  </div>
+
+  <div id="listView">
+    <div class="filters" id="filters"></div>
+    <div class="list" id="list"></div>
+  </div>
+
+  <div id="aggView" style="display:none;"></div>
+</div>
+
+<div class="fab" id="fab"><button id="addProspect">＋ 営業先を追加</button></div>
+
+<!-- プロジェクト追加/編集モーダル -->
+<div class="ov" id="projOv">
+  <div class="modal">
+    <h2 id="projModalTitle">プロジェクトを追加</h2>
+    <div class="mlabel">プロジェクト名</div>
+    <input class="txt" id="projName" placeholder="例：ワンバランスボクシングジム営業先">
+    <div class="mlabel">テーマカラー</div>
+    <div class="colors" id="colorList"></div>
+    <div class="mlabel" style="margin-top:14px;">自由な色（カスタム）</div>
+    <input type="color" id="customColor" value="#5BB9CD" style="width:60px; height:40px; border:none; background:none; cursor:pointer;">
+    <div class="mbtns">
+      <button class="cancel" id="projCancel">キャンセル</button>
+      <button class="del" id="projDelete" style="display:none;">削除</button>
+      <button class="ok" id="projSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 営業先 名前入力モーダル -->
+<div class="ov" id="nameOv">
+  <div class="modal">
+    <h2 id="nameModalTitle">営業先を追加</h2>
+    <div class="mlabel">名前</div>
+    <input class="txt" id="prospectName" placeholder="例：山田 様">
+    <div class="mbtns">
+      <button class="cancel" id="nameCancel">キャンセル</button>
+      <button class="ok" id="nameSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 設定（ここを変えると初期値が変わります） ===================== */
+const STORE_KEY = 'onetre_v1';
+const PRESETS = {
+  blue:     {name:'ワンバランス青', primary:'#5BB9CD', on:'#ffffff', accent:'#2a8294', tint:'#EAF6F9'},
+  gold:     {name:'ゴールド',       primary:'#C9A24B', on:'#5a4410', accent:'#8a6a1e', tint:'#FBF4E2'},
+  katsuiro: {name:'勝色（紺）',     primary:'#182747', on:'#ffffff', accent:'#1c4e63', tint:'#EAEEF6'}
+};
+const DEFAULT_DATA = {
+  activeProjectId: 'p_one_tre',
+  projects: [{
+    id:'p_one_tre', name:'ONE-TRE', theme:'blue', custom:null,
+    prospects:[]
+  }]
+};
+/* =============================================================================== */
+
+let data = load();
+let activeTab = 'list';
+let filter = 'all';
+let editingProjectId = null;   // null=新規
+let editingProspectId = null;  // null=新規（名前モーダル）
+
+function load(){
+  try{ const r = JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.projects) return r; }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){} }
+function uid(p){ return p+'_'+Date.now()+'_'+Math.floor(Math.random()*1000); }
+function getProject(){ return data.projects.find(p=>p.id===data.activeProjectId) || data.projects[0]; }
+function thisMonth(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+
+/* テーマ適用 */
+function lum(hex){ const n=hex.replace('#',''); const r=parseInt(n.substr(0,2),16),g=parseInt(n.substr(2,2),16),b=parseInt(n.substr(4,2),16); return (0.299*r+0.587*g+0.114*b)/255; }
+function darken(hex,f){ const n=hex.replace('#',''); let r=parseInt(n.substr(0,2),16),g=parseInt(n.substr(2,2),16),b=parseInt(n.substr(4,2),16); r=Math.round(r*f);g=Math.round(g*f);b=Math.round(b*f); return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function lighten(hex,f){ const n=hex.replace('#',''); let r=parseInt(n.substr(0,2),16),g=parseInt(n.substr(2,2),16),b=parseInt(n.substr(4,2),16); r=Math.round(r+(255-r)*f);g=Math.round(g+(255-g)*f);b=Math.round(b+(255-b)*f); return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function themeOf(proj){
+  if(proj.theme==='custom' && proj.custom){
+    const p=proj.custom;
+    return {primary:p, on: lum(p)>0.62?'#333':'#fff', accent:darken(p,0.7), tint:lighten(p,0.88)};
+  }
+  return PRESETS[proj.theme] || PRESETS.blue;
+}
+function applyTheme(){
+  const t = themeOf(getProject());
+  const r = document.documentElement.style;
+  r.setProperty('--primary', t.primary);
+  r.setProperty('--on-primary', t.on);
+  r.setProperty('--accent', t.accent);
+  r.setProperty('--tint', t.tint);
+  document.querySelector('meta[name=theme-color]').setAttribute('content', t.primary);
+}
+
+/* ===== 統計 ===== */
+function calcStats(proj){
+  const ps = proj.prospects;
+  const total = ps.length;
+  const approached = ps.filter(p=>p.approached).length;
+  const remaining = total - approached;
+  const referrals = ps.filter(p=>p.isReferrer).length;
+  const closed = ps.filter(p=>p.isClosed).length;
+  const refRate = approached>0 ? Math.round(referrals/approached*100) : 0;
+  const clRate  = approached>0 ? Math.round(closed/approached*100) : 0;
+  return {total, approached, remaining, referrals, closed, refRate, clRate};
+}
+
+/* ===== 描画 ===== */
+function render(){
+  const proj = getProject();
+  applyTheme();
+  document.getElementById('hdTitle').textContent = proj.name + ' 営業先';
+  renderProjbar();
+  renderStats();
+  if(activeTab==='list'){
+    document.getElementById('listView').style.display='';
+    document.getElementById('aggView').style.display='none';
+    document.getElementById('fab').style.display='';
+    renderFilters(); renderList();
+  }else{
+    document.getElementById('listView').style.display='none';
+    document.getElementById('aggView').style.display='';
+    document.getElementById('fab').style.display='none';
+    renderAgg();
+  }
+}
+
+function renderProjbar(){
+  const bar = document.getElementById('projbar'); bar.innerHTML='';
+  data.projects.forEach(p=>{
+    const c=document.createElement('div'); c.className='chip'+(p.id===data.activeProjectId?' on':''); c.textContent=p.name;
+    c.onclick=()=>{ data.activeProjectId=p.id; save(); render(); };
+    bar.appendChild(c);
+  });
+  const add=document.createElement('div'); add.className='chip add'; add.textContent='＋ 追加';
+  add.onclick=()=>openProjModal(null); bar.appendChild(add);
+}
+
+function renderStats(){
+  const s=calcStats(getProject());
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="lbl">残り</div><div class="num">${s.remaining}</div><div class="sub">/ ${s.total}件</div></div>
+    <div class="stat"><div class="lbl">紹介率</div><div class="num">${s.refRate}%</div><div class="sub">${s.referrals}人</div></div>
+    <div class="stat"><div class="lbl">成約率</div><div class="num">${s.clRate}%</div><div class="sub">${s.closed}人</div></div>`;
+  document.getElementById('countline').innerHTML=`<b>${s.approached}</b>人アプローチ ／ <b>${s.referrals}</b>人紹介 ／ <b>${s.closed}</b>人成約`;
+}
+
+function renderFilters(){
+  const defs=[['all','すべて'],['todo','未アプローチ'],['s3','★3'],['s2','★2'],['s1','★1'],['closed','成約済']];
+  const el=document.getElementById('filters'); el.innerHTML='';
+  defs.forEach(([k,label])=>{
+    const c=document.createElement('div'); c.className='fchip'+(filter===k?' on':''); c.textContent=label;
+    c.onclick=()=>{ filter=k; renderFilters(); renderList(); };
+    el.appendChild(c);
+  });
+}
+
+function passFilter(p){
+  if(filter==='all') return true;
+  if(filter==='todo') return !p.approached;
+  if(filter==='closed') return p.isClosed;
+  if(filter==='s3') return p.stars===3;
+  if(filter==='s2') return p.stars===2;
+  if(filter==='s1') return p.stars===1;
+  return true;
+}
+
+function renderList(){
+  const proj=getProject();
+  const el=document.getElementById('list'); el.innerHTML='';
+  const items=proj.prospects.filter(passFilter);
+  if(items.length===0){ el.innerHTML='<div class="empty">該当する営業先がありません。<br>右下の「＋ 営業先を追加」から登録できます。</div>'; return; }
+  items.forEach(p=>{
+    const item=document.createElement('div'); item.className='item'+(p.approached?' done':'');
+    const stars='★'.repeat(p.stars)+'☆'.repeat(3-p.stars);
+    item.innerHTML=`
+      <div class="row">
+        <div class="check ${p.approached?'on':''}" data-act="check">${p.approached?'✓':''}</div>
+        <div class="name">${escapeHtml(p.name)}</div>
+        ${p.isClosed?'<span class="closed-badge">🏆 成約</span>':''}
+        ${p.stars>0?`<span class="mini-stars">${'★'.repeat(p.stars)}</span>`:''}
+        <div class="exp" data-act="exp">▾</div>
+      </div>
+      <div class="detail">
+        <div class="dlabel">見込み度（★3=かなり前向き / ★2=普通 / ★1=見込み薄）</div>
+        <div class="stars">${[1,2,3].map(n=>`<span class="star ${p.stars>=n?'on':''}" data-star="${n}">★</span>`).join('')}</div>
+        <div class="star-hint">同じ星をもう一度タップで解除</div>
+        <div class="toggle-row">
+          <button class="tbtn ${p.isReferrer?'on-ref':''}" data-act="ref">👥 紹介者（誰かを紹介した）</button>
+          <button class="tbtn ${p.isClosed?'on-closed':''}" data-act="closed">🏆 成約</button>
+        </div>
+        <div class="dlabel">紹介者（この人を紹介してくれた人）</div>
+        <input class="txt" data-act="referrer" value="${escapeAttr(p.referrer||'')}" placeholder="紹介者名">
+        <div class="dlabel">メモ</div>
+        <textarea class="txt" data-act="memo" placeholder="自由メモ">${escapeHtml(p.memo||'')}</textarea>
+        <div class="editbtns">
+          <button data-act="rename">✏️ 名前を編集</button>
+          <button class="del" data-act="delete">🗑 削除</button>
+        </div>
+      </div>`;
+    // イベント
+    item.querySelector('[data-act=check]').onclick=()=>{ p.approached=!p.approached; if(p.approached&&!p.approachMonth) p.approachMonth=thisMonth(); save(); render(); };
+    const exp=item.querySelector('[data-act=exp]'); const detail=item.querySelector('.detail');
+    exp.onclick=()=>{ detail.classList.toggle('open'); exp.classList.toggle('open'); };
+    item.querySelectorAll('[data-star]').forEach(st=>{ st.onclick=()=>{ const n=+st.dataset.star; p.stars=(p.stars===n)?0:n; save(); render(); reopen(p.id);}; });
+    item.querySelector('[data-act=ref]').onclick=()=>{ p.isReferrer=!p.isReferrer; save(); render(); reopen(p.id); };
+    item.querySelector('[data-act=closed]').onclick=()=>{ p.isClosed=!p.isClosed; save(); render(); reopen(p.id); };
+    item.querySelector('[data-act=referrer]').oninput=(e)=>{ p.referrer=e.target.value; save(); };
+    item.querySelector('[data-act=memo]').oninput=(e)=>{ p.memo=e.target.value; save(); };
+    item.querySelector('[data-act=rename]').onclick=()=>openNameModal(p.id);
+    item.querySelector('[data-act=delete]').onclick=()=>{ if(confirm(p.name+' を削除しますか？')){ proj.prospects=proj.prospects.filter(x=>x.id!==p.id); save(); render(); } };
+    item.dataset.pid=p.id;
+    el.appendChild(item);
+  });
+}
+// 再描画後に開いていた詳細を開き直す
+let openIds=new Set();
+function reopen(id){
+  const it=document.querySelector('.item[data-pid="'+id+'"]');
+  if(it){ it.querySelector('.detail').classList.add('open'); it.querySelector('.exp').classList.add('open'); }
+}
+
+function renderAgg(){
+  const proj=getProject(); const s=calcStats(proj);
+  // 直近6ヶ月
+  const months=[]; const d=new Date();
+  for(let i=5;i>=0;i--){ const m=new Date(d.getFullYear(),d.getMonth()-i,1); months.push(m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')); }
+  const counts=months.map(m=>proj.prospects.filter(p=>p.approached&&p.approachMonth===m).length);
+  const max=Math.max(1,...counts);
+  const bars=months.map((m,i)=>{
+    const h=Math.round(counts[i]/max*130);
+    const label=(+m.split('-')[1])+'月';
+    return `<div class="barcol"><div class="barval">${counts[i]}</div><div class="bar" style="height:${h}px"></div><div class="barlbl">${label}</div></div>`;
+  }).join('');
+  document.getElementById('aggView').innerHTML=`
+    <div class="agg">
+      <div class="agg-cards">
+        <div class="stat"><div class="lbl">成約</div><div class="num">${s.closed}<span style="font-size:14px;color:var(--muted)">/${s.approached}</span></div><div class="sub">成約/アプローチ</div></div>
+        <div class="stat"><div class="lbl">成約率</div><div class="num">${s.clRate}%</div><div class="sub">${s.closed}人成約</div></div>
+        <div class="stat"><div class="lbl">紹介率</div><div class="num">${s.refRate}%</div><div class="sub">${s.referrals}人紹介</div></div>
+      </div>
+      <div class="chart">
+        <h3>月別アプローチ数</h3>
+        <div class="bars">${bars}</div>
+      </div>
+    </div>`;
+}
+
+/* ===== プロジェクトモーダル ===== */
+let pickedTheme='blue';
+function openProjModal(id){
+  editingProjectId=id;
+  const isNew=!id;
+  document.getElementById('projModalTitle').textContent= isNew?'プロジェクトを追加':'プロジェクトを編集';
+  document.getElementById('projDelete').style.display= isNew?'none':'';
+  const proj = isNew?null:data.projects.find(p=>p.id===id);
+  document.getElementById('projName').value = proj?proj.name:'';
+  pickedTheme = proj?proj.theme:'blue';
+  if(proj&&proj.theme==='custom'){ document.getElementById('customColor').value=proj.custom||'#5BB9CD'; }
+  renderColorDots();
+  document.getElementById('projOv').classList.add('open');
+}
+function renderColorDots(){
+  const cl=document.getElementById('colorList'); cl.innerHTML='';
+  Object.entries(PRESETS).forEach(([key,v])=>{
+    const dot=document.createElement('div'); dot.className='cdot'+(pickedTheme===key?' on':''); dot.style.background=v.primary; dot.title=v.name;
+    dot.onclick=()=>{ pickedTheme=key; renderColorDots(); };
+    cl.appendChild(dot);
+  });
+}
+document.getElementById('customColor').oninput=()=>{ pickedTheme='custom'; renderColorDots(); };
+document.getElementById('projCancel').onclick=()=>document.getElementById('projOv').classList.remove('open');
+document.getElementById('projSave').onclick=()=>{
+  const name=document.getElementById('projName').value.trim();
+  if(!name){ alert('プロジェクト名を入力してください'); return; }
+  const custom = pickedTheme==='custom'?document.getElementById('customColor').value:null;
+  if(editingProjectId){
+    const p=data.projects.find(x=>x.id===editingProjectId); p.name=name; p.theme=pickedTheme; p.custom=custom;
+  }else{
+    const np={id:uid('p'), name, theme:pickedTheme, custom, prospects:[]};
+    data.projects.push(np); data.activeProjectId=np.id;
+  }
+  save(); document.getElementById('projOv').classList.remove('open'); render();
+};
+document.getElementById('projDelete').onclick=()=>{
+  if(data.projects.length<=1){ alert('最後の1つのプロジェクトは削除できません'); return; }
+  const p=data.projects.find(x=>x.id===editingProjectId);
+  if(confirm('「'+p.name+'」を削除しますか？\n中の営業先もすべて消えます')){
+    data.projects=data.projects.filter(x=>x.id!==editingProjectId);
+    data.activeProjectId=data.projects[0].id;
+    save(); document.getElementById('projOv').classList.remove('open'); render();
+  }
+};
+document.getElementById('gearBtn').onclick=()=>openProjModal(data.activeProjectId);
+
+/* ===== 名前モーダル（営業先 追加/編集） ===== */
+function openNameModal(id){
+  editingProspectId=id;
+  document.getElementById('nameModalTitle').textContent= id?'名前を編集':'営業先を追加';
+  const proj=getProject();
+  const p = id?proj.prospects.find(x=>x.id===id):null;
+  document.getElementById('prospectName').value = p?p.name:'';
+  document.getElementById('nameOv').classList.add('open');
+  setTimeout(()=>document.getElementById('prospectName').focus(),100);
+}
+document.getElementById('addProspect').onclick=()=>openNameModal(null);
+document.getElementById('nameCancel').onclick=()=>document.getElementById('nameOv').classList.remove('open');
+document.getElementById('nameSave').onclick=()=>{
+  const name=document.getElementById('prospectName').value.trim();
+  if(!name){ alert('名前を入力してください'); return; }
+  const proj=getProject();
+  if(editingProspectId){
+    proj.prospects.find(x=>x.id===editingProspectId).name=name;
+  }else{
+    proj.prospects.unshift({id:uid('s'),name,approached:false,approachMonth:null,stars:0,isReferrer:false,isClosed:false,referrer:'',memo:''});
+  }
+  save(); document.getElementById('nameOv').classList.remove('open'); render();
+};
+
+/* ===== タブ ===== */
+document.getElementById('tabList').onclick=()=>{ activeTab='list'; document.getElementById('tabList').classList.add('on'); document.getElementById('tabAgg').classList.remove('on'); render(); };
+document.getElementById('tabAgg').onclick=()=>{ activeTab='agg'; document.getElementById('tabAgg').classList.add('on'); document.getElementById('tabList').classList.remove('on'); render(); };
+
+/* ===== util ===== */
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+/* ===== ホーム画面アイコン（B-2：青ベタ＋白の的）を生成 ===== */
+function buildIcon(size){
+  const c=document.createElement('canvas'); c.width=size; c.height=size;
+  const x=c.getContext('2d'); const cx=size/2;
+  x.fillStyle='#5BB9CD'; x.fillRect(0,0,size,size);
+  const lw=size*0.052;
+  x.lineWidth=lw; x.strokeStyle='rgba(255,255,255,0.45)';
+  x.beginPath(); x.arc(cx,cx,size*0.35,0,Math.PI*2); x.stroke();
+  x.strokeStyle='rgba(255,255,255,0.78)';
+  x.beginPath(); x.arc(cx,cx,size*0.235,0,Math.PI*2); x.stroke();
+  x.fillStyle='#ffffff';
+  x.beginPath(); x.arc(cx,cx,size*0.12,0,Math.PI*2); x.fill();
+  return c.toDataURL('image/png');
+}
+function setupAppIcon(){
+  const icon180=buildIcon(180); const icon512=buildIcon(512);
+  let l=document.createElement('link'); l.rel='apple-touch-icon'; l.setAttribute('sizes','180x180'); l.href=icon180; document.head.appendChild(l);
+  let f=document.createElement('link'); f.rel='icon'; f.type='image/png'; f.href=icon180; document.head.appendChild(f);
+  const manifest={ name:'ONE-TRE 営業先リスト', short_name:'ONE-TRE', display:'standalone', background_color:'#5BB9CD', theme_color:'#5BB9CD', start_url:'.', icons:[{src:icon180,sizes:'180x180',type:'image/png'},{src:icon512,sizes:'512x512',type:'image/png'}] };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  let m=document.createElement('link'); m.rel='manifest'; m.href=URL.createObjectURL(blob); document.head.appendChild(m);
+}
+
+/* ===== 起動 ===== */
+setupAppIcon();
+render();
+</script>
+</body>
+</html>
