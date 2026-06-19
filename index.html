@@ -125,7 +125,7 @@
         <circle cx="66" cy="66" r="16" fill="#fff"/>
       </svg>
       <div class="hd-title" id="hdTitle">ONE-TRE 営業先</div>
-      <button class="gear" id="gearBtn" aria-label="プロジェクト設定">⚙</button>
+      <button class="gear" id="gearBtn" aria-label="営業リスト設定">⚙</button>
     </div>
   </div>
 
@@ -152,13 +152,13 @@
 <!-- プロジェクト追加/編集モーダル -->
 <div class="ov" id="projOv">
   <div class="modal">
-    <h2 id="projModalTitle">プロジェクトを追加</h2>
-    <div class="mlabel">プロジェクト名</div>
+    <h2 id="projModalTitle">営業リストを追加</h2>
+    <div class="mlabel">リスト名</div>
     <input class="txt" id="projName" placeholder="例：ワンバランスボクシングジム営業先">
     <div class="mlabel">テーマカラー</div>
     <div class="colors" id="colorList"></div>
     <div class="mlabel" style="margin-top:14px;">自由な色（カスタム）</div>
-    <input type="color" id="customColor" value="#5BB9CD" style="width:60px; height:40px; border:none; background:none; cursor:pointer;">
+    <input type="color" id="customColor" value="#DB444C" style="width:60px; height:40px; border:none; background:none; cursor:pointer;">
     <div class="mbtns">
       <button class="cancel" id="projCancel">キャンセル</button>
       <button class="del" id="projDelete" style="display:none;">削除</button>
@@ -184,14 +184,14 @@
 /* ===================== 設定（ここを変えると初期値が変わります） ===================== */
 const STORE_KEY = 'onetre_v1';
 const PRESETS = {
-  blue:     {name:'ワンバランス青', primary:'#5BB9CD', on:'#ffffff', accent:'#2a8294', tint:'#EAF6F9'},
-  gold:     {name:'ゴールド',       primary:'#C9A24B', on:'#5a4410', accent:'#8a6a1e', tint:'#FBF4E2'},
-  katsuiro: {name:'勝色（紺）',     primary:'#182747', on:'#ffffff', accent:'#1c4e63', tint:'#EAEEF6'}
+  red:  {name:'ワンバランス赤',     primary:'#DB444C', on:'#ffffff', accent:'#A82E35', tint:'#FBE4E5', bg:'#F8F1F1'},
+  mono: {name:'白黒（モノトーン）', primary:'#222222', on:'#ffffff', accent:'#555555', tint:'#EEEEEE', bg:'#F5F5F5'},
+  pink: {name:'パステルピンク',     primary:'#E8849D', on:'#ffffff', accent:'#C2566F', tint:'#F8D9E2', bg:'#FCEAF0'}
 };
 const DEFAULT_DATA = {
   activeProjectId: 'p_one_tre',
   projects: [{
-    id:'p_one_tre', name:'ONE-TRE', theme:'blue', custom:null,
+    id:'p_one_tre', name:'ONE-TRE', theme:'red', custom:null,
     prospects:[]
   }]
 };
@@ -204,9 +204,10 @@ let editingProjectId = null;   // null=新規
 let editingProspectId = null;  // null=新規（名前モーダル）
 
 function load(){
-  try{ const r = JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.projects) return r; }catch(e){}
+  try{ const r = JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.projects){ migrate(r); return r; } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
+function migrate(d){ d.projects.forEach(p=>{ if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; }); }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){} }
 function uid(p){ return p+'_'+Date.now()+'_'+Math.floor(Math.random()*1000); }
 function getProject(){ return data.projects.find(p=>p.id===data.activeProjectId) || data.projects[0]; }
@@ -219,9 +220,9 @@ function lighten(hex,f){ const n=hex.replace('#',''); let r=parseInt(n.substr(0,
 function themeOf(proj){
   if(proj.theme==='custom' && proj.custom){
     const p=proj.custom;
-    return {primary:p, on: lum(p)>0.62?'#333':'#fff', accent:darken(p,0.7), tint:lighten(p,0.88)};
+    return {primary:p, on: lum(p)>0.62?'#333':'#fff', accent:darken(p,0.7), tint:lighten(p,0.88), bg:lighten(p,0.92)};
   }
-  return PRESETS[proj.theme] || PRESETS.blue;
+  return PRESETS[proj.theme] || PRESETS.red;
 }
 function applyTheme(){
   const t = themeOf(getProject());
@@ -230,6 +231,7 @@ function applyTheme(){
   r.setProperty('--on-primary', t.on);
   r.setProperty('--accent', t.accent);
   r.setProperty('--tint', t.tint);
+  r.setProperty('--bg', t.bg || '#f3f5f7');
   document.querySelector('meta[name=theme-color]').setAttribute('content', t.primary);
 }
 
@@ -392,11 +394,11 @@ let pickedTheme='blue';
 function openProjModal(id){
   editingProjectId=id;
   const isNew=!id;
-  document.getElementById('projModalTitle').textContent= isNew?'プロジェクトを追加':'プロジェクトを編集';
+  document.getElementById('projModalTitle').textContent= isNew?'営業リストを追加':'営業リストを編集';
   document.getElementById('projDelete').style.display= isNew?'none':'';
   const proj = isNew?null:data.projects.find(p=>p.id===id);
   document.getElementById('projName').value = proj?proj.name:'';
-  pickedTheme = proj?proj.theme:'blue';
+  pickedTheme = proj?proj.theme:'red';
   if(proj&&proj.theme==='custom'){ document.getElementById('customColor').value=proj.custom||'#5BB9CD'; }
   renderColorDots();
   document.getElementById('projOv').classList.add('open');
@@ -413,7 +415,7 @@ document.getElementById('customColor').oninput=()=>{ pickedTheme='custom'; rende
 document.getElementById('projCancel').onclick=()=>document.getElementById('projOv').classList.remove('open');
 document.getElementById('projSave').onclick=()=>{
   const name=document.getElementById('projName').value.trim();
-  if(!name){ alert('プロジェクト名を入力してください'); return; }
+  if(!name){ alert('リスト名を入力してください'); return; }
   const custom = pickedTheme==='custom'?document.getElementById('customColor').value:null;
   if(editingProjectId){
     const p=data.projects.find(x=>x.id===editingProjectId); p.name=name; p.theme=pickedTheme; p.custom=custom;
@@ -424,7 +426,7 @@ document.getElementById('projSave').onclick=()=>{
   save(); document.getElementById('projOv').classList.remove('open'); render();
 };
 document.getElementById('projDelete').onclick=()=>{
-  if(data.projects.length<=1){ alert('最後の1つのプロジェクトは削除できません'); return; }
+  if(data.projects.length<=1){ alert('最後の1つのリストは削除できません'); return; }
   const p=data.projects.find(x=>x.id===editingProjectId);
   if(confirm('「'+p.name+'」を削除しますか？\n中の営業先もすべて消えます')){
     data.projects=data.projects.filter(x=>x.id!==editingProjectId);
