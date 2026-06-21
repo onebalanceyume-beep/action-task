@@ -32,6 +32,7 @@
   .logo{width:30px; height:30px; flex:0 0 auto;}
   .hd-title{font-size:16px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .gear{background:rgba(255,255,255,.22); border:none; color:var(--on-primary); width:32px; height:32px; border-radius:9px; font-size:16px; cursor:pointer; flex:0 0 auto;}
+  .hd-ver{font-size:10px; color:var(--on-primary); opacity:.65; padding-left:40px; margin-top:2px;}
   /* プロジェクトチップ */
   .projbar{display:flex; gap:8px; overflow-x:auto; padding:12px 16px 4px; -webkit-overflow-scrolling:touch;}
   .projbar::-webkit-scrollbar{display:none;}
@@ -152,8 +153,10 @@
         <circle cx="66" cy="66" r="16" fill="#fff"/>
       </svg>
       <div class="hd-title" id="hdTitle">ONE-TRE 営業先</div>
+      <button class="gear" id="refreshBtn" aria-label="最新に更新" title="最新に更新">🔄</button>
       <button class="gear" id="gearBtn" aria-label="営業リスト設定">⚙</button>
     </div>
+    <div class="hd-ver">ver <span id="verLabel"></span></div>
   </div>
 
   <div class="projbar" id="projbar"></div>
@@ -643,6 +646,9 @@ function setupAppIcon(){
 }
 
 /* ===== 起動 ===== */
+const APP_VER='v9';
+document.getElementById('verLabel').textContent=APP_VER;
+document.getElementById('refreshBtn').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); };
 setupAppIcon();
 render();
 </script>
