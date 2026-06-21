@@ -126,6 +126,9 @@
   .progress-txt b{color:var(--accent); font-weight:700;}
   .plan{margin-top:12px; border-left:3px solid var(--tint); padding-left:10px;}
   .plan-hd{display:flex; align-items:center; gap:6px;}
+  .plan.done .plan-name{text-decoration:line-through; color:var(--muted);}
+  .plan.done{opacity:.7;}
+  .plan-done-badge{display:inline-block; font-size:11px; color:#fff; background:var(--primary); padding:2px 8px; border-radius:11px; margin-left:4px; text-decoration:none; vertical-align:middle;}
   .plan-name{flex:1; font-size:14px; font-weight:600;}
   .ins{display:block; width:100%; text-align:center; border:none; background:none; color:var(--muted); font-size:12px; padding:2px 0; cursor:pointer; opacity:.55;}
   .ins:hover{opacity:1;}
@@ -541,9 +544,10 @@ function renderGoals(){
         <div class="progress-txt">完了 <b>${pr.done}/${pr.total}</b> ・ <b>${pr.pct}%</b></div>
       </div>`;
     g.plans.forEach(pl=>{
-      html+=`<div class="plan">
+      const pdone = pl.steps.length>0 && pl.steps.every(s=>s.done);
+      html+=`<div class="plan${pdone?' done':''}">
         <div class="plan-hd">
-          <div class="plan-name">📌 ${escapeHtml(pl.name)}</div>
+          <div class="plan-name">📌 ${escapeHtml(pl.name)}${pdone?' <span class="plan-done-badge">達成🎉</span>':''}</div>
           <button class="icbtn" data-act="editplan" data-gid="${g.id}" data-pid="${pl.id}">✏️</button>
           <button class="icbtn" data-act="delplan" data-gid="${g.id}" data-pid="${pl.id}">🗑</button>
         </div>
