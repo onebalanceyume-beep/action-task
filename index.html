@@ -154,6 +154,7 @@
       </svg>
       <div class="hd-title" id="hdTitle">ONE-TRE 営業先</div>
       <button class="gear" id="refreshBtn" aria-label="最新に更新" title="最新に更新">🔄</button>
+      <button class="gear" id="dataBtn" aria-label="データのバックアップ" title="データのバックアップ">📦</button>
       <button class="gear" id="gearBtn" aria-label="営業リスト設定">⚙</button>
     </div>
     <div class="hd-ver">ver <span id="verLabel"></span></div>
@@ -182,6 +183,22 @@
 <div class="fab" id="fab"><button id="addProspect">＋ 営業先を追加</button></div>
 
 <!-- プロジェクト追加/編集モーダル -->
+<!-- データ（バックアップ）モーダル -->
+<div class="ov" id="dataOv">
+  <div class="modal">
+    <h2>データのバックアップ</h2>
+    <div class="mlabel">① 書き出し（今のデータをコピー）</div>
+    <textarea class="txt" id="exportArea" readonly style="min-height:70px; font-size:11px;"></textarea>
+    <button id="copyBtn" style="width:100%; padding:11px; border-radius:9px; border:none; color:var(--on-primary); background:var(--primary); font-size:14px; font-weight:500; cursor:pointer; margin-top:8px;">📋 コピーする</button>
+    <div class="mlabel" style="margin-top:16px;">② 読み込み（別の端末のデータを貼り付けて復元）</div>
+    <textarea class="txt" id="importArea" placeholder="ここにコピーしたデータを貼り付け" style="min-height:70px; font-size:11px;"></textarea>
+    <div class="mbtns">
+      <button class="cancel" id="dataClose">閉じる</button>
+      <button class="ok" id="restoreBtn">この内容で復元</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="projOv">
   <div class="modal">
     <h2 id="projModalTitle">営業リストを追加</h2>
@@ -646,9 +663,34 @@ function setupAppIcon(){
 }
 
 /* ===== 起動 ===== */
-const APP_VER='v9';
+const APP_VER='v10';
 document.getElementById('verLabel').textContent=APP_VER;
 document.getElementById('refreshBtn').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); };
+/* データのバックアップ */
+document.getElementById('dataBtn').onclick=()=>{
+  document.getElementById('exportArea').value = localStorage.getItem(STORE_KEY) || JSON.stringify(data);
+  document.getElementById('importArea').value='';
+  document.getElementById('dataOv').classList.add('open');
+};
+document.getElementById('dataClose').onclick=()=>document.getElementById('dataOv').classList.remove('open');
+document.getElementById('copyBtn').onclick=()=>{
+  const ta=document.getElementById('exportArea'); ta.select();
+  const txt=ta.value;
+  const done=()=>{ const b=document.getElementById('copyBtn'); b.textContent='✓ コピーしました'; setTimeout(()=>b.textContent='📋 コピーする',1500); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,()=>{ try{document.execCommand('copy');done();}catch(e){alert('コピーできませんでした。長押しで選択してコピーしてください');} }); }
+  else { try{document.execCommand('copy');done();}catch(e){alert('コピーできませんでした。長押しで選択してコピーしてください');} }
+};
+document.getElementById('restoreBtn').onclick=()=>{
+  const txt=document.getElementById('importArea').value.trim();
+  if(!txt){ alert('復元するデータを貼り付けてください'); return; }
+  let obj; try{ obj=JSON.parse(txt); }catch(e){ alert('データの形式が正しくありません'); return; }
+  if(!obj || !obj.projects){ alert('このデータは読み込めません（営業リストアプリのバックアップではないようです）'); return; }
+  if(confirm('今のデータを、貼り付けた内容で上書きします。よろしいですか？')){
+    localStorage.setItem(STORE_KEY, JSON.stringify(obj));
+    alert('復元しました。画面を更新します。');
+    location.reload();
+  }
+};
 setupAppIcon();
 render();
 </script>
