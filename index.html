@@ -225,14 +225,14 @@ const STORE_KEY = 'onetre_v1';
 const PRESETS = {
   red:   {name:'ワンバランス赤',       primary:'#DB444C', on:'#ffffff', accent:'#A82E35', tint:'#FBE4E5', bg:'#F8F1F1'},
   mocha: {name:'薄茶×パステルピンク',   primary:'#9B7B58', on:'#ffffff', accent:'#C8607D', tint:'#EFE3D0', bg:'#F2E9DB'},
-  blue:  {name:'ワンバランス青',       primary:'#5BB9CD', on:'#ffffff', accent:'#2a8294', tint:'#EAF6F9', bg:'#EEF7F9'}
+  blue:     {name:'ワンバランス青',     primary:'#5BB9CD', on:'#ffffff', accent:'#2a8294', tint:'#EAF6F9', bg:'#EEF7F9'},
+  charcoal: {name:'チャコール（黒）',   primary:'#3A3D42', on:'#ffffff', accent:'#5A6068', tint:'#E7E9EC', bg:'#F2F3F5'}
 };
 const DEFAULT_DATA = {
   activeProjectId: 'p_one_tre',
-  goals: [],
   projects: [{
     id:'p_one_tre', name:'ONE-TRE', theme:'red', custom:null,
-    prospects:[]
+    prospects:[], goals:[]
   }]
 };
 /* =============================================================================== */
@@ -247,7 +247,11 @@ function load(){
   try{ const r = JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.projects){ migrate(r); return r; } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
-function migrate(d){ if(!d.goals) d.goals=[]; d.projects.forEach(p=>{ if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; }); }
+function migrate(d){
+  d.projects.forEach(p=>{ if(!p.goals) p.goals=[]; if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; });
+  if(d.goals && d.goals.length){ d.projects[0].goals = d.projects[0].goals.concat(d.goals); }
+  delete d.goals;
+}
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){} }
 function uid(p){ return p+'_'+Date.now()+'_'+Math.floor(Math.random()*1000); }
 function getProject(){ return data.projects.find(p=>p.id===data.activeProjectId) || data.projects[0]; }
@@ -293,12 +297,13 @@ function render(){
   const proj = getProject();
   applyTheme();
   const isGoal = activeTab==='goal';
-  document.getElementById('hdTitle').textContent = isGoal ? '目標管理' : proj.name + ' 営業先';
-  document.getElementById('projbar').style.display = isGoal?'none':'';
+  document.getElementById('hdTitle').textContent = isGoal ? proj.name + ' の目標' : proj.name + ' 営業先';
+  document.getElementById('projbar').style.display = '';
   document.getElementById('stats').style.display = isGoal?'none':'';
   document.getElementById('countline').style.display = isGoal?'none':'';
-  document.getElementById('gearBtn').style.display = isGoal?'none':'';
-  if(!isGoal){ renderProjbar(); renderStats(); }
+  document.getElementById('gearBtn').style.display = '';
+  renderProjbar();
+  if(!isGoal){ renderStats(); }
   document.getElementById('listView').style.display = activeTab==='list'?'':'none';
   document.getElementById('aggView').style.display = activeTab==='agg'?'':'none';
   document.getElementById('goalsView').style.display = isGoal?'':'none';
@@ -460,7 +465,7 @@ document.getElementById('projSave').onclick=()=>{
   if(editingProjectId){
     const p=data.projects.find(x=>x.id===editingProjectId); p.name=name; p.theme=pickedTheme; p.custom=custom;
   }else{
-    const np={id:uid('p'), name, theme:pickedTheme, custom, prospects:[]};
+    const np={id:uid('p'), name, theme:pickedTheme, custom, prospects:[], goals:[]};
     data.projects.push(np); data.activeProjectId=np.id;
   }
   save(); document.getElementById('projOv').classList.remove('open'); render();
@@ -513,16 +518,17 @@ document.getElementById('tabAgg').onclick=()=>setTab('agg');
 document.getElementById('tabGoal').onclick=()=>setTab('goal');
 
 /* ===== 目標管理（目標→プラン→ステップ） ===== */
-function findGoal(gid){ return data.goals.find(g=>g.id===gid); }
+function findGoal(gid){ return getProject().goals.find(g=>g.id===gid); }
 function goalProgress(g){
   let total=0,done=0;
   g.plans.forEach(pl=>pl.steps.forEach(s=>{ total++; if(s.done) done++; }));
   return {total,done,pct: total?Math.round(done/total*100):0};
 }
 function renderGoals(){
+  const goals=getProject().goals;
   let html='<div class="goals"><button class="addgoal" data-act="addgoal">＋ 目標（ビジョン）を追加</button>';
-  if(data.goals.length===0){ html+='<div class="empty">まだ目標がありません。<br>上のボタンから「年内に会員300名」などのビジョンを追加できます。</div>'; }
-  data.goals.forEach(g=>{
+  if(goals.length===0){ html+='<div class="empty">このリストにはまだ目標がありません。<br>上のボタンから「年内に会員300名」などのビジョンを追加できます。</div>'; }
+  goals.forEach(g=>{
     const pr=goalProgress(g);
     html+=`<div class="goal">
       <div class="goal-hd">
@@ -564,11 +570,11 @@ document.getElementById('goalsView').onclick=(e)=>{
   const g=gid?findGoal(gid):null;
   const pl=(g&&pid)?g.plans.find(x=>x.id===pid):null;
   if(act==='addgoal'){
-    openInput('目標を追加','目標（ビジョン）','',(v)=>{ data.goals.push({id:uid('g'),name:v,plans:[]}); save(); renderGoals(); });
+    openInput('目標を追加','目標（ビジョン）','',(v)=>{ getProject().goals.push({id:uid('g'),name:v,plans:[]}); save(); renderGoals(); });
   }else if(act==='editgoal'){
     openInput('目標を編集','目標（ビジョン）',g.name,(v)=>{ g.name=v; save(); renderGoals(); });
   }else if(act==='delgoal'){
-    if(confirm('本当に削除しますか？\nこの目標の中のプラン・ステップもすべて消えます')){ data.goals=data.goals.filter(x=>x.id!==gid); save(); renderGoals(); }
+    if(confirm('本当に削除しますか？\nこの目標の中のプラン・ステップもすべて消えます')){ const p=getProject(); p.goals=p.goals.filter(x=>x.id!==gid); save(); renderGoals(); }
   }else if(act==='addplan'){
     openInput('プランを追加','プラン名','',(v)=>{ g.plans.push({id:uid('pl'),name:v,steps:[]}); save(); renderGoals(); });
   }else if(act==='editplan'){
