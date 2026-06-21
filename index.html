@@ -112,6 +112,30 @@
   .mbtns .cancel{background:var(--line); color:var(--text);}
   .mbtns .ok{background:var(--primary); color:var(--on-primary);}
   .mbtns .del{background:#fff; color:var(--danger); border:1px solid #e9c4c4;}
+  /* 目標管理 */
+  .goals{padding:10px 16px 90px;}
+  .addgoal{width:100%; padding:13px; border-radius:12px; border:1.5px dashed var(--primary); background:var(--card); color:var(--primary); font-size:14px; font-weight:600; cursor:pointer; margin-bottom:12px;}
+  .goal{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px;}
+  .goal-hd{display:flex; align-items:center; gap:8px;}
+  .goal-name{flex:1; font-size:16px; font-weight:700; min-width:0;}
+  .icbtn{background:none; border:none; font-size:15px; color:var(--muted); cursor:pointer; padding:4px; flex:0 0 auto;}
+  .progress-wrap{margin:10px 0 4px;}
+  .progress-bar{height:12px; background:var(--tint); border-radius:8px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--primary); border-radius:8px; transition:width .35s;}
+  .progress-txt{font-size:12px; color:var(--muted); margin-top:5px;}
+  .progress-txt b{color:var(--accent); font-weight:700;}
+  .plan{margin-top:12px; border-left:3px solid var(--tint); padding-left:10px;}
+  .plan-hd{display:flex; align-items:center; gap:6px;}
+  .plan-name{flex:1; font-size:14px; font-weight:600;}
+  .ins{display:block; width:100%; text-align:center; border:none; background:none; color:var(--muted); font-size:12px; padding:2px 0; cursor:pointer; opacity:.55;}
+  .ins:hover{opacity:1;}
+  .step{display:flex; align-items:center; gap:8px; padding:8px 6px; border-radius:8px; background:var(--bg);}
+  .step .sbox{width:20px; height:20px; flex:0 0 auto; border:2px solid var(--primary); border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px;}
+  .step .sbox.on{background:var(--primary);}
+  .step .stext{flex:1; font-size:14px; cursor:pointer; min-width:0;}
+  .step.done .stext{text-decoration:line-through; color:var(--muted);}
+  .addplan{margin-top:12px; width:100%; padding:9px; border-radius:9px; border:1.5px dashed var(--line); background:none; color:var(--muted); font-size:13px; cursor:pointer;}
+  .addstep{margin-top:6px; width:100%; padding:7px; border-radius:8px; border:1px dashed var(--line); background:none; color:var(--muted); font-size:12px; cursor:pointer;}
 </style>
 </head>
 <body>
@@ -137,6 +161,7 @@
   <div class="tabs">
     <div class="tab on" id="tabList">リスト</div>
     <div class="tab" id="tabAgg">集計</div>
+    <div class="tab" id="tabGoal">目標</div>
   </div>
 
   <div id="listView">
@@ -145,6 +170,7 @@
   </div>
 
   <div id="aggView" style="display:none;"></div>
+  <div id="goalsView" style="display:none;"></div>
 </div>
 
 <div class="fab" id="fab"><button id="addProspect">＋ 営業先を追加</button></div>
@@ -180,6 +206,19 @@
   </div>
 </div>
 
+<!-- 汎用入力モーダル（目標／プラン／ステップ） -->
+<div class="ov" id="inputOv">
+  <div class="modal">
+    <h2 id="inputTitle">入力</h2>
+    <div class="mlabel" id="inputLabel">内容</div>
+    <textarea class="txt" id="inputField" style="min-height:48px;"></textarea>
+    <div class="mbtns">
+      <button class="cancel" id="inputCancel">キャンセル</button>
+      <button class="ok" id="inputOk">保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ===================== 設定（ここを変えると初期値が変わります） ===================== */
 const STORE_KEY = 'onetre_v1';
@@ -190,6 +229,7 @@ const PRESETS = {
 };
 const DEFAULT_DATA = {
   activeProjectId: 'p_one_tre',
+  goals: [],
   projects: [{
     id:'p_one_tre', name:'ONE-TRE', theme:'red', custom:null,
     prospects:[]
@@ -207,7 +247,7 @@ function load(){
   try{ const r = JSON.parse(localStorage.getItem(STORE_KEY)); if(r&&r.projects){ migrate(r); return r; } }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
-function migrate(d){ d.projects.forEach(p=>{ if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; }); }
+function migrate(d){ if(!d.goals) d.goals=[]; d.projects.forEach(p=>{ if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; }); }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){} }
 function uid(p){ return p+'_'+Date.now()+'_'+Math.floor(Math.random()*1000); }
 function getProject(){ return data.projects.find(p=>p.id===data.activeProjectId) || data.projects[0]; }
@@ -252,20 +292,20 @@ function calcStats(proj){
 function render(){
   const proj = getProject();
   applyTheme();
-  document.getElementById('hdTitle').textContent = proj.name + ' 営業先';
-  renderProjbar();
-  renderStats();
-  if(activeTab==='list'){
-    document.getElementById('listView').style.display='';
-    document.getElementById('aggView').style.display='none';
-    document.getElementById('fab').style.display='';
-    renderFilters(); renderList();
-  }else{
-    document.getElementById('listView').style.display='none';
-    document.getElementById('aggView').style.display='';
-    document.getElementById('fab').style.display='none';
-    renderAgg();
-  }
+  const isGoal = activeTab==='goal';
+  document.getElementById('hdTitle').textContent = isGoal ? '目標管理' : proj.name + ' 営業先';
+  document.getElementById('projbar').style.display = isGoal?'none':'';
+  document.getElementById('stats').style.display = isGoal?'none':'';
+  document.getElementById('countline').style.display = isGoal?'none':'';
+  document.getElementById('gearBtn').style.display = isGoal?'none':'';
+  if(!isGoal){ renderProjbar(); renderStats(); }
+  document.getElementById('listView').style.display = activeTab==='list'?'':'none';
+  document.getElementById('aggView').style.display = activeTab==='agg'?'':'none';
+  document.getElementById('goalsView').style.display = isGoal?'':'none';
+  document.getElementById('fab').style.display = activeTab==='list'?'':'none';
+  if(activeTab==='list'){ renderFilters(); renderList(); }
+  else if(activeTab==='agg'){ renderAgg(); }
+  else { renderGoals(); }
 }
 
 function renderProjbar(){
@@ -461,8 +501,109 @@ document.getElementById('nameSave').onclick=()=>{
 };
 
 /* ===== タブ ===== */
-document.getElementById('tabList').onclick=()=>{ activeTab='list'; document.getElementById('tabList').classList.add('on'); document.getElementById('tabAgg').classList.remove('on'); render(); };
-document.getElementById('tabAgg').onclick=()=>{ activeTab='agg'; document.getElementById('tabAgg').classList.add('on'); document.getElementById('tabList').classList.remove('on'); render(); };
+function setTab(t){
+  activeTab=t;
+  document.getElementById('tabList').classList.toggle('on',t==='list');
+  document.getElementById('tabAgg').classList.toggle('on',t==='agg');
+  document.getElementById('tabGoal').classList.toggle('on',t==='goal');
+  render();
+}
+document.getElementById('tabList').onclick=()=>setTab('list');
+document.getElementById('tabAgg').onclick=()=>setTab('agg');
+document.getElementById('tabGoal').onclick=()=>setTab('goal');
+
+/* ===== 目標管理（目標→プラン→ステップ） ===== */
+function findGoal(gid){ return data.goals.find(g=>g.id===gid); }
+function goalProgress(g){
+  let total=0,done=0;
+  g.plans.forEach(pl=>pl.steps.forEach(s=>{ total++; if(s.done) done++; }));
+  return {total,done,pct: total?Math.round(done/total*100):0};
+}
+function renderGoals(){
+  let html='<div class="goals"><button class="addgoal" data-act="addgoal">＋ 目標（ビジョン）を追加</button>';
+  if(data.goals.length===0){ html+='<div class="empty">まだ目標がありません。<br>上のボタンから「年内に会員300名」などのビジョンを追加できます。</div>'; }
+  data.goals.forEach(g=>{
+    const pr=goalProgress(g);
+    html+=`<div class="goal">
+      <div class="goal-hd">
+        <div class="goal-name">${escapeHtml(g.name)}</div>
+        <button class="icbtn" data-act="editgoal" data-gid="${g.id}">✏️</button>
+        <button class="icbtn" data-act="delgoal" data-gid="${g.id}">🗑</button>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" style="width:${pr.pct}%"></div></div>
+        <div class="progress-txt">完了 <b>${pr.done}/${pr.total}</b> ・ <b>${pr.pct}%</b></div>
+      </div>`;
+    g.plans.forEach(pl=>{
+      html+=`<div class="plan">
+        <div class="plan-hd">
+          <div class="plan-name">📌 ${escapeHtml(pl.name)}</div>
+          <button class="icbtn" data-act="editplan" data-gid="${g.id}" data-pid="${pl.id}">✏️</button>
+          <button class="icbtn" data-act="delplan" data-gid="${g.id}" data-pid="${pl.id}">🗑</button>
+        </div>
+        <button class="ins" data-act="insstep" data-gid="${g.id}" data-pid="${pl.id}" data-pos="0">＋ ここに挿入</button>`;
+      pl.steps.forEach((s,i)=>{
+        html+=`<div class="step ${s.done?'done':''}">
+          <div class="sbox ${s.done?'on':''}" data-act="togglestep" data-gid="${g.id}" data-pid="${pl.id}" data-sid="${s.id}">${s.done?'✓':''}</div>
+          <div class="stext" data-act="togglestep" data-gid="${g.id}" data-pid="${pl.id}" data-sid="${s.id}">${escapeHtml(s.text)}</div>
+          <button class="icbtn" data-act="editstep" data-gid="${g.id}" data-pid="${pl.id}" data-sid="${s.id}">✏️</button>
+          <button class="icbtn" data-act="delstep" data-gid="${g.id}" data-pid="${pl.id}" data-sid="${s.id}">🗑</button>
+        </div>
+        <button class="ins" data-act="insstep" data-gid="${g.id}" data-pid="${pl.id}" data-pos="${i+1}">＋ ここに挿入</button>`;
+      });
+      html+=`</div>`;
+    });
+    html+=`<button class="addplan" data-act="addplan" data-gid="${g.id}">＋ プランを追加</button></div>`;
+  });
+  html+='</div>';
+  document.getElementById('goalsView').innerHTML=html;
+}
+document.getElementById('goalsView').onclick=(e)=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.dataset.act, gid=t.dataset.gid, pid=t.dataset.pid, sid=t.dataset.sid;
+  const g=gid?findGoal(gid):null;
+  const pl=(g&&pid)?g.plans.find(x=>x.id===pid):null;
+  if(act==='addgoal'){
+    openInput('目標を追加','目標（ビジョン）','',(v)=>{ data.goals.push({id:uid('g'),name:v,plans:[]}); save(); renderGoals(); });
+  }else if(act==='editgoal'){
+    openInput('目標を編集','目標（ビジョン）',g.name,(v)=>{ g.name=v; save(); renderGoals(); });
+  }else if(act==='delgoal'){
+    if(confirm('本当に削除しますか？\nこの目標の中のプラン・ステップもすべて消えます')){ data.goals=data.goals.filter(x=>x.id!==gid); save(); renderGoals(); }
+  }else if(act==='addplan'){
+    openInput('プランを追加','プラン名','',(v)=>{ g.plans.push({id:uid('pl'),name:v,steps:[]}); save(); renderGoals(); });
+  }else if(act==='editplan'){
+    openInput('プランを編集','プラン名',pl.name,(v)=>{ pl.name=v; save(); renderGoals(); });
+  }else if(act==='delplan'){
+    if(confirm('本当に削除しますか？\nこのプランの中のステップもすべて消えます')){ g.plans=g.plans.filter(x=>x.id!==pid); save(); renderGoals(); }
+  }else if(act==='insstep'){
+    const pos=+t.dataset.pos;
+    openInput('ステップを追加','やること（具体的な行動）','',(v)=>{ pl.steps.splice(pos,0,{id:uid('st'),text:v,done:false}); save(); renderGoals(); });
+  }else if(act==='editstep'){
+    const s=pl.steps.find(x=>x.id===sid);
+    openInput('ステップを編集','やること（具体的な行動）',s.text,(v)=>{ s.text=v; save(); renderGoals(); });
+  }else if(act==='delstep'){
+    if(confirm('本当に削除しますか？')){ pl.steps=pl.steps.filter(x=>x.id!==sid); save(); renderGoals(); }
+  }else if(act==='togglestep'){
+    const s=pl.steps.find(x=>x.id===sid); s.done=!s.done; save(); renderGoals();
+  }
+};
+/* 汎用入力モーダル */
+let inputCb=null;
+function openInput(title,label,value,cb){
+  document.getElementById('inputTitle').textContent=title;
+  document.getElementById('inputLabel').textContent=label;
+  const f=document.getElementById('inputField'); f.value=value||'';
+  inputCb=cb;
+  document.getElementById('inputOv').classList.add('open');
+  setTimeout(()=>{ f.focus(); },100);
+}
+document.getElementById('inputCancel').onclick=()=>{ document.getElementById('inputOv').classList.remove('open'); inputCb=null; };
+document.getElementById('inputOk').onclick=()=>{
+  const v=document.getElementById('inputField').value.trim();
+  if(!v){ alert('内容を入力してください'); return; }
+  const cb=inputCb; document.getElementById('inputOv').classList.remove('open'); inputCb=null;
+  if(cb) cb(v);
+};
 
 /* ===== util ===== */
 function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
