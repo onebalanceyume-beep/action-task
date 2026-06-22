@@ -140,6 +140,13 @@
   .step.done .stext{text-decoration:line-through; color:var(--muted);}
   .addplan{margin-top:12px; width:100%; padding:9px; border-radius:9px; border:1.5px dashed var(--line); background:none; color:var(--muted); font-size:13px; cursor:pointer;}
   .addstep{margin-top:6px; width:100%; padding:7px; border-radius:8px; border:1px dashed var(--line); background:none; color:var(--muted); font-size:12px; cursor:pointer;}
+  /* 経費 */
+  .exp-wrap{padding:0 16px 90px;}
+  .exp-item{display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-top:8px; cursor:pointer;}
+  .exp-main{flex:1; min-width:0;}
+  .exp-item-name{font-size:14px; font-weight:500;}
+  .exp-memo{font-size:12px; color:var(--muted); margin-top:2px;}
+  .exp-amount{font-size:15px; font-weight:700; color:var(--accent); flex:0 0 auto;}
 </style>
 </head>
 <body>
@@ -169,6 +176,7 @@
     <div class="tab on" id="tabList">リスト</div>
     <div class="tab" id="tabAgg">集計</div>
     <div class="tab" id="tabGoal">目標</div>
+    <div class="tab" id="tabExp">経費</div>
   </div>
 
   <div id="listView">
@@ -178,11 +186,47 @@
 
   <div id="aggView" style="display:none;"></div>
   <div id="goalsView" style="display:none;"></div>
+  <div id="expensesView" style="display:none;"></div>
 </div>
 
 <div class="fab" id="fab"><button id="addProspect">＋ 営業先を追加</button></div>
 
 <!-- プロジェクト追加/編集モーダル -->
+<!-- 経費モーダル -->
+<div class="ov" id="expOv">
+  <div class="modal">
+    <h2 id="expTitle">経費を追加</h2>
+    <div class="mlabel">事業名（どの事業の経費か）</div>
+    <input class="txt" id="expSource" placeholder="例：ドーナツ作り / ハッピーキッズ">
+    <div class="mlabel">品目（何にかかったか）</div>
+    <input class="txt" id="expItem" placeholder="例：ドーナツの材料費">
+    <div class="mlabel">金額（円）</div>
+    <input class="txt" id="expAmount" type="number" inputmode="numeric" placeholder="例：3000">
+    <div class="mlabel">メモ（任意）</div>
+    <input class="txt" id="expMemo" placeholder="任意">
+    <div class="mbtns">
+      <button class="cancel" id="expCancel">キャンセル</button>
+      <button class="del" id="expDelete" style="display:none;">削除</button>
+      <button class="ok" id="expSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 連動設定モーダル -->
+<div class="ov" id="gasOv">
+  <div class="modal">
+    <h2>経費の連動設定</h2>
+    <div class="mlabel">連動スプレッドシートのURL（GASウェブアプリ）</div>
+    <input class="txt" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <p style="font-size:11px;color:var(--muted);margin:8px 0 0;line-height:1.5;">※このURLは他人に教えないでください。同じURLを別アプリにも設定すると経費が連動します。</p>
+    <div class="mbtns">
+      <button class="cancel" id="gasCancel">キャンセル</button>
+      <button class="del" id="gasClear" style="display:none;">解除</button>
+      <button class="ok" id="gasSave">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- データ（バックアップ）モーダル -->
 <div class="ov" id="dataOv">
   <div class="modal">
@@ -255,7 +299,7 @@ const DEFAULT_DATA = {
   activeProjectId: 'p_one_tre',
   projects: [{
     id:'p_one_tre', name:'ONE-TRE', theme:'red', custom:null,
-    prospects:[], goals:[]
+    prospects:[], goals:[], expenses:[]
   }]
 };
 /* =============================================================================== */
@@ -271,7 +315,7 @@ function load(){
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
 function migrate(d){
-  d.projects.forEach(p=>{ if(!p.goals) p.goals=[]; if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; });
+  d.projects.forEach(p=>{ if(!p.goals) p.goals=[]; if(!p.expenses) p.expenses=[]; if(p.theme!=='custom' && !PRESETS[p.theme]) p.theme='red'; });
   if(d.goals && d.goals.length){ d.projects[0].goals = d.projects[0].goals.concat(d.goals); }
   delete d.goals;
 }
@@ -319,21 +363,24 @@ function calcStats(proj){
 function render(){
   const proj = getProject();
   applyTheme();
-  const isGoal = activeTab==='goal';
-  document.getElementById('hdTitle').textContent = isGoal ? proj.name + ' の目標' : proj.name + ' 営業先';
-  document.getElementById('projbar').style.display = '';
-  document.getElementById('stats').style.display = isGoal?'none':'';
-  document.getElementById('countline').style.display = isGoal?'none':'';
-  document.getElementById('gearBtn').style.display = '';
+  const titles={list:proj.name+' 営業先', agg:proj.name+' 集計', goal:proj.name+' の目標', exp:proj.name+' の経費'};
+  const showSalesStats = (activeTab==='list'||activeTab==='agg');
+  document.getElementById('hdTitle').textContent = titles[activeTab] || proj.name;
+  document.getElementById('projbar').style.display = (activeTab==='exp')?'none':'';
+  document.getElementById('stats').style.display = showSalesStats?'':'none';
+  document.getElementById('countline').style.display = showSalesStats?'':'none';
+  document.getElementById('gearBtn').style.display = (activeTab==='exp')?'none':'';
   renderProjbar();
-  if(!isGoal){ renderStats(); }
+  if(showSalesStats){ renderStats(); }
   document.getElementById('listView').style.display = activeTab==='list'?'':'none';
   document.getElementById('aggView').style.display = activeTab==='agg'?'':'none';
-  document.getElementById('goalsView').style.display = isGoal?'':'none';
+  document.getElementById('goalsView').style.display = activeTab==='goal'?'':'none';
+  document.getElementById('expensesView').style.display = activeTab==='exp'?'':'none';
   document.getElementById('fab').style.display = activeTab==='list'?'':'none';
   if(activeTab==='list'){ renderFilters(); renderList(); }
   else if(activeTab==='agg'){ renderAgg(); }
-  else { renderGoals(); }
+  else if(activeTab==='goal'){ renderGoals(); }
+  else { renderExpenses(); if(gasUrl()&&!expLoaded&&!expLoading) fetchExpenses(); }
 }
 
 function renderProjbar(){
@@ -488,7 +535,7 @@ document.getElementById('projSave').onclick=()=>{
   if(editingProjectId){
     const p=data.projects.find(x=>x.id===editingProjectId); p.name=name; p.theme=pickedTheme; p.custom=custom;
   }else{
-    const np={id:uid('p'), name, theme:pickedTheme, custom, prospects:[], goals:[]};
+    const np={id:uid('p'), name, theme:pickedTheme, custom, prospects:[], goals:[], expenses:[]};
     data.projects.push(np); data.activeProjectId=np.id;
   }
   save(); document.getElementById('projOv').classList.remove('open'); render();
@@ -534,11 +581,13 @@ function setTab(t){
   document.getElementById('tabList').classList.toggle('on',t==='list');
   document.getElementById('tabAgg').classList.toggle('on',t==='agg');
   document.getElementById('tabGoal').classList.toggle('on',t==='goal');
+  document.getElementById('tabExp').classList.toggle('on',t==='exp');
   render();
 }
 document.getElementById('tabList').onclick=()=>setTab('list');
 document.getElementById('tabAgg').onclick=()=>setTab('agg');
 document.getElementById('tabGoal').onclick=()=>setTab('goal');
+document.getElementById('tabExp').onclick=()=>setTab('exp');
 
 /* ===== 目標管理（目標→プラン→ステップ） ===== */
 function findGoal(gid){ return getProject().goals.find(g=>g.id===gid); }
@@ -635,6 +684,110 @@ document.getElementById('inputOk').onclick=()=>{
   if(cb) cb(v);
 };
 
+/* ===== 経費（GASスプレッドシート連動） ===== */
+function gasUrl(){ try{ return localStorage.getItem('onetre_gas_url')||''; }catch(e){ return ''; } }
+let expCache=[]; let expLoading=false; let expLoaded=false;
+function expTotal(list){ return list.reduce((s,e)=>s+(+e.amount||0),0); }
+function renderExpenses(){
+  const view=document.getElementById('expensesView');
+  const url=gasUrl();
+  if(!url){
+    view.innerHTML='<div class="exp-wrap"><div class="empty">経費を別アプリ（ハッピーキッズなど）と連動させるには、<br>連動スプレッドシートの設定が必要です。</div><button class="addgoal" data-act="setgas">連動スプレッドシートを設定</button></div>';
+    return;
+  }
+  const total=expTotal(expCache);
+  let html='<div class="exp-wrap">';
+  html+='<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);padding:8px 0 0;"><span>連動中</span><button data-act="reloadexp" style="margin-left:auto;background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">↻ 再読み込み</button><button data-act="setgas" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;">設定</button></div>';
+  html+=`<div class="stats" style="padding:10px 0 0;"><div class="stat"><div class="lbl">経費合計</div><div class="num" style="font-size:18px;">¥${total.toLocaleString()}</div></div><div class="stat"><div class="lbl">件数</div><div class="num">${expCache.length}</div></div></div>`;
+  html+='<button class="addgoal" data-act="addexp" style="margin-top:12px;">＋ 経費を追加</button>';
+  if(expLoading){ html+='<div class="empty">読み込み中…</div>'; }
+  else if(!expLoaded){ html+='<div class="empty">「↻ 再読み込み」で経費を取得します。</div>'; }
+  else if(expCache.length===0){ html+='<div class="empty">まだ経費がありません。「＋ 経費を追加」から記録できます。</div>'; }
+  else {
+    expCache.slice().reverse().forEach(e=>{
+      html+=`<div class="exp-item" data-act="editexp" data-eid="${escapeAttr(String(e.id))}"><div class="exp-main"><div class="exp-item-name">${escapeHtml(e.item)}</div><div class="exp-memo">${escapeHtml(e.source||'')}${e.memo?' / '+escapeHtml(e.memo):''}</div></div><div class="exp-amount">¥${(+e.amount||0).toLocaleString()}</div></div>`;
+    });
+  }
+  html+='</div>';
+  view.innerHTML=html;
+}
+function fetchExpenses(){
+  const url=gasUrl(); if(!url) return;
+  expLoading=true; renderExpenses();
+  fetch(url).then(r=>r.json()).then(d=>{
+    if(d&&d.ok){ expCache=d.expenses||[]; expLoaded=true; }
+    expLoading=false; renderExpenses();
+  }).catch(err=>{ expLoading=false; expLoaded=true; renderExpenses(); alert('読み込みに失敗しました。通信環境と連動URLを確認してください。'); });
+}
+function postExpense(payload){
+  const url=gasUrl(); if(!url){ alert('連動先が未設定です'); return; }
+  expLoading=true; renderExpenses();
+  fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+    .then(r=>r.json()).then(d=>{
+      expLoading=false;
+      if(d&&d.ok){ expCache=d.expenses||expCache; expLoaded=true; renderExpenses(); }
+      else { renderExpenses(); alert('保存エラー：'+((d&&d.error)||'不明')); }
+    }).catch(err=>{ expLoading=false; renderExpenses(); alert('保存に失敗しました。通信環境を確認してください。'); });
+}
+document.getElementById('expensesView').onclick=(e)=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const a=t.dataset.act;
+  if(a==='addexp') openExpModal(null);
+  else if(a==='editexp') openExpModal(t.dataset.eid);
+  else if(a==='reloadexp') fetchExpenses();
+  else if(a==='setgas') openGasModal();
+};
+let editingExpId=null;
+function openExpModal(eid){
+  editingExpId=eid;
+  const ex = eid?expCache.find(x=>String(x.id)===String(eid)):null;
+  document.getElementById('expTitle').textContent= eid?'経費を編集':'経費を追加';
+  document.getElementById('expDelete').style.display= eid?'':'none';
+  document.getElementById('expSource').value= ex?(ex.source||''):'';
+  document.getElementById('expItem').value= ex?ex.item:'';
+  document.getElementById('expAmount').value= ex?ex.amount:'';
+  document.getElementById('expMemo').value= ex?(ex.memo||''):'';
+  document.getElementById('expOv').classList.add('open');
+  setTimeout(()=>document.getElementById('expSource').focus(),100);
+}
+document.getElementById('expCancel').onclick=()=>document.getElementById('expOv').classList.remove('open');
+document.getElementById('expSave').onclick=()=>{
+  const source=document.getElementById('expSource').value.trim();
+  const item=document.getElementById('expItem').value.trim();
+  const amount=Math.round(+document.getElementById('expAmount').value);
+  const memo=document.getElementById('expMemo').value.trim();
+  if(!item){ alert('品目を入力してください'); return; }
+  if(!amount || amount<0 || isNaN(amount)){ alert('金額を正しく入力してください'); return; }
+  document.getElementById('expOv').classList.remove('open');
+  if(editingExpId){
+    const old=expCache.find(x=>String(x.id)===String(editingExpId))||{};
+    postExpense({action:'update', id:editingExpId, ts:old.ts||new Date().toLocaleString('ja-JP'), source, project:getProject().name, item, amount, memo});
+  } else {
+    postExpense({action:'add', id:'e'+Date.now()+Math.floor(Math.random()*1000), ts:new Date().toLocaleString('ja-JP'), source, project:getProject().name, item, amount, memo});
+  }
+};
+document.getElementById('expDelete').onclick=()=>{
+  if(confirm('本当に削除しますか？')){ document.getElementById('expOv').classList.remove('open'); postExpense({action:'delete', id:editingExpId}); }
+};
+/* 連動設定モーダル */
+function openGasModal(){
+  document.getElementById('gasUrlInput').value=gasUrl();
+  document.getElementById('gasClear').style.display= gasUrl()?'':'none';
+  document.getElementById('gasOv').classList.add('open');
+}
+document.getElementById('gasCancel').onclick=()=>document.getElementById('gasOv').classList.remove('open');
+document.getElementById('gasSave').onclick=()=>{
+  const u=document.getElementById('gasUrlInput').value.trim();
+  if(!u || u.indexOf('script.google.com')<0){ alert('GASウェブアプリのURL（script.google.com…/exec）を貼ってください'); return; }
+  try{ localStorage.setItem('onetre_gas_url', u); }catch(e){}
+  document.getElementById('gasOv').classList.remove('open');
+  expLoaded=false; expCache=[]; fetchExpenses();
+};
+document.getElementById('gasClear').onclick=()=>{
+  if(confirm('連動を解除しますか？（経費は連動先シートに残ります）')){ try{ localStorage.removeItem('onetre_gas_url'); }catch(e){} expCache=[]; expLoaded=false; document.getElementById('gasOv').classList.remove('open'); renderExpenses(); }
+};
+
+
 /* ===== util ===== */
 function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
@@ -663,7 +816,7 @@ function setupAppIcon(){
 }
 
 /* ===== 起動 ===== */
-const APP_VER='v10';
+const APP_VER='v12';
 document.getElementById('verLabel').textContent=APP_VER;
 document.getElementById('refreshBtn').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); };
 /* データのバックアップ */
