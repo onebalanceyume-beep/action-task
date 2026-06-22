@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ONE-TRE">
@@ -685,7 +682,8 @@ document.getElementById('inputOk').onclick=()=>{
 };
 
 /* ===== 経費（GASスプレッドシート連動） ===== */
-function gasUrl(){ try{ return localStorage.getItem('onetre_gas_url')||''; }catch(e){ return ''; } }
+const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbyB6rbYggmkvxvY3LVrrABCzR77c2rZmAV1HCW1n3ARVlPiqvXMMtz5gX6lCT0hZq_qDg/exec';
+function gasUrl(){ try{ return localStorage.getItem('onetre_gas_url') || DEFAULT_GAS_URL; }catch(e){ return DEFAULT_GAS_URL; } }
 let expCache=[]; let expLoading=false; let expLoaded=false;
 function expTotal(list){ return list.reduce((s,e)=>s+(+e.amount||0),0); }
 function renderExpenses(){
@@ -816,7 +814,7 @@ function setupAppIcon(){
 }
 
 /* ===== 起動 ===== */
-const APP_VER='v12';
+const APP_VER='v13';
 document.getElementById('verLabel').textContent=APP_VER;
 document.getElementById('refreshBtn').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); };
 /* データのバックアップ */
