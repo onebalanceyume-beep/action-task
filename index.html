@@ -28,7 +28,8 @@
   .hd-top{display:flex; align-items:center; gap:10px;}
   .logo{width:30px; height:30px; flex:0 0 auto;}
   .hd-title{font-size:16px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .gear{background:rgba(255,255,255,.22); border:none; color:var(--on-primary); width:32px; height:32px; border-radius:9px; font-size:16px; cursor:pointer; flex:0 0 auto;}
+  .gear{background:var(--btn-bg,rgba(255,255,255,.22)); border:none; color:var(--on-primary); width:34px; height:34px; border-radius:10px; cursor:pointer; flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:0;}
+  .gear svg{width:19px; height:19px; display:block;}
   .hd-ver{font-size:10px; color:var(--on-primary); opacity:.65; padding-left:40px; margin-top:2px;}
   /* プロジェクトチップ */
   .projbar{display:flex; gap:8px; overflow-x:auto; padding:12px 16px 4px; -webkit-overflow-scrolling:touch;}
@@ -150,16 +151,22 @@
 <div class="wrap">
   <div class="hd">
     <div class="hd-top">
-      <svg class="logo" viewBox="0 0 132 132" xmlns="http://www.w3.org/2000/svg">
-        <rect width="132" height="132" rx="30" fill="#fff" opacity="0.18"/>
-        <circle cx="66" cy="66" r="46" fill="none" stroke="#fff" stroke-width="7" opacity="0.5"/>
-        <circle cx="66" cy="66" r="31" fill="none" stroke="#fff" stroke-width="7" opacity="0.8"/>
-        <circle cx="66" cy="66" r="16" fill="#fff"/>
+      <svg class="logo" viewBox="0 0 132 132" style="color:var(--on-primary)" xmlns="http://www.w3.org/2000/svg">
+        <rect width="132" height="132" rx="30" fill="currentColor" opacity="0.18"/>
+        <circle cx="66" cy="66" r="46" fill="none" stroke="currentColor" stroke-width="7" opacity="0.5"/>
+        <circle cx="66" cy="66" r="31" fill="none" stroke="currentColor" stroke-width="7" opacity="0.8"/>
+        <circle cx="66" cy="66" r="16" fill="currentColor"/>
       </svg>
       <div class="hd-title" id="hdTitle">ONE-TRE 営業先</div>
-      <button class="gear" id="refreshBtn" aria-label="最新に更新" title="最新に更新">🔄</button>
-      <button class="gear" id="dataBtn" aria-label="データのバックアップ" title="データのバックアップ">📦</button>
-      <button class="gear" id="gearBtn" aria-label="営業リスト設定">⚙</button>
+      <button class="gear" id="refreshBtn" aria-label="最新に更新" title="最新に更新">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a8 8 0 1 0-2.1 5.6"/><path d="M20 4.5v6h-6"/></svg>
+      </button>
+      <button class="gear" id="dataBtn" aria-label="データのバックアップ" title="データのバックアップ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 12 4l8.5 4-8.5 4z"/><path d="M3.5 8v8L12 20l8.5-4V8"/><path d="M12 12v8"/></svg>
+      </button>
+      <button class="gear" id="gearBtn" aria-label="営業リスト設定">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.3"/><path d="M12 2.2v3M12 18.8v3M2.2 12h3M18.8 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/></svg>
+      </button>
     </div>
     <div class="hd-ver">ver <span id="verLabel"></span></div>
   </div>
@@ -287,10 +294,13 @@
 /* ===================== 設定（ここを変えると初期値が変わります） ===================== */
 const STORE_KEY = 'onetre_v1';
 const PRESETS = {
-  red:   {name:'ワンバランス赤',       primary:'#DB444C', on:'#ffffff', accent:'#A82E35', tint:'#FBE4E5', bg:'#F8F1F1'},
-  mocha: {name:'薄茶×パステルピンク',   primary:'#9B7B58', on:'#ffffff', accent:'#C8607D', tint:'#EFE3D0', bg:'#F2E9DB'},
+  red:      {name:'ワンバランス赤',     primary:'#DB444C', on:'#ffffff', accent:'#A82E35', tint:'#FBE4E5', bg:'#F8F1F1'},
+  mocha:    {name:'薄茶×パステルピンク', primary:'#9B7B58', on:'#ffffff', accent:'#C8607D', tint:'#EFE3D0', bg:'#F2E9DB'},
   blue:     {name:'ワンバランス青',     primary:'#5BB9CD', on:'#ffffff', accent:'#2a8294', tint:'#EAF6F9', bg:'#EEF7F9'},
-  charcoal: {name:'チャコール（黒）',   primary:'#3A3D42', on:'#ffffff', accent:'#5A6068', tint:'#E7E9EC', bg:'#F2F3F5'}
+  charcoal: {name:'チャコール（黒）',   primary:'#3A3D42', on:'#ffffff', accent:'#5A6068', tint:'#E7E9EC', bg:'#F2F3F5'},
+  pink:     {name:'パステルピンク',     primary:'#F6BCCB', on:'#9B4A5E', accent:'#D26E86', tint:'#FCE6EC', bg:'#FDF1F5'},
+  green:    {name:'パステルグリーン',   primary:'#AED9BC', on:'#3C7350', accent:'#4E9E6A', tint:'#E4F2E9', bg:'#F1F8F3'},
+  yellow:   {name:'パステルイエロー',   primary:'#F3D77E', on:'#86671A', accent:'#B9912E', tint:'#FBF2D4', bg:'#FCF8E8'}
 };
 const DEFAULT_DATA = {
   activeProjectId: 'p_one_tre',
@@ -340,6 +350,7 @@ function applyTheme(){
   r.setProperty('--accent', t.accent);
   r.setProperty('--tint', t.tint);
   r.setProperty('--bg', t.bg || '#f3f5f7');
+  r.setProperty('--btn-bg', (t.on==='#ffffff'||t.on==='#fff') ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.10)');
   document.querySelector('meta[name=theme-color]').setAttribute('content', t.primary);
 }
 
@@ -814,7 +825,7 @@ function setupAppIcon(){
 }
 
 /* ===== 起動 ===== */
-const APP_VER='v13';
+const APP_VER='v14';
 document.getElementById('verLabel').textContent=APP_VER;
 document.getElementById('refreshBtn').onclick=()=>{ location.replace(location.pathname+'?v='+Date.now()); };
 /* データのバックアップ */
